@@ -1,0 +1,20 @@
+global:
+  smtp_smarthost: "smtp.gmail.com:587"
+  smtp_from: "tradingcontentdrive@gmail.com"
+  smtp_auth_username: "tradingcontentdrive@gmail.com"
+  smtp_auth_password: "Your app password"
+
+route:
+  group_by: ["alertname"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: "email-alert"
+
+receivers:
+  - name: "email-alert"
+    email_configs:
+      - to: "tradingcontentdrive@gmail.com"
+        send_resolved: true
+
+inhibit_rules: []

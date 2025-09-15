@@ -1,0 +1,94 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: k8s-dashboard-alerts
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  groups:
+    - name: pod-alerts
+      rules:
+        - alert: PendingPod
+          expr: kube_pod_status_phase{phase="Pending"} > 0
+          for: 30s
+          labels:
+            team: robin
+            severity: critical
+          annotations:
+            summary: "Pod is Pending"
+            description: "Pod {{$labels.pod}} in namespace {{$labels.namespace}} is pending."
+
+        - alert: CrashloopbackoffPods
+          expr: sum(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}) > 0
+          for: 30s
+          labels:
+            team: robin
+            severity: critical
+          annotations:
+            summary: "Pod is Crashing"
+            description: "There are {{$value}} pods in crashloopbackoff state"
+
+        - alert: ImagePullIssues
+          expr: sum(kube_pod_container_status_waiting_reason{reason=~"ImagePullBackOff|ErrImagePull"}) > 0
+          for: 2m
+          labels:
+            team: robin
+            severity: critical
+          annotations:
+            summary: "Image Pull Issues"
+            description: "There are {{$value}} pods failing due to image pull issues"
+
+        - alert: ContainerRecreating
+          expr: sum(kube_pod_container_status_restarts_total) > 0
+          for: 2m
+          labels:
+            team: robin
+            severity: critical
+          annotations:
+            summary: "Container Recreating"
+            description: "There are {{$value}} containers recreating"
+
+        - alert: TerminatingPods
+          expr: count(kube_pod_deletion_timestamp > 0)
+          for: 5m
+          labels:
+            team: robin
+            severity: warning
+          annotations:
+            summary: "Pods Terminating"
+            description: "There are {{$value}} pods in Terminating state."
+
+    - name: node-alerts
+      rules:
+        - alert: NodeNotReady
+          expr: kube_node_status_condition{condition="Ready",status=~"false|unknown"} == 1
+          for: 2m
+          labels:
+            team: robin
+            severity: warning
+          annotations:
+            summary: "Node {{$labels.node}} is Not Ready"
+            description: "Node is not in Ready state."
+
+    - name: storage-alerts
+      rules:
+        - alert: UnboundPVC
+          expr: kube_persistentvolumeclaim_status_phase{phase="Pending"} > 0
+          for: 2m
+          labels:
+            team: robin
+            severity: critical
+          annotations:
+            summary: "Unbound PVC Detected"
+            description: "There are {{$value}} Persistent Volume Claims stuck in Pending state"
+
+        - alert: PersistentVolumeAvailableForTooLong
+          expr: kube_persistentvolume_status_phase{phase="Available"}
+          for: 30m
+          labels:
+            team: robin
+            severity: critical
+          annotations:
+            summary: "Persistent Volume is Available but not bound"
+            description: "PersistentVolume {{$labels.persistentvolume}} has been available for more than 30 minutes but is not bound to a PVC"

@@ -1,0 +1,22 @@
+# Add labels to prometheusrule k8s-dashboard-alerts
+kubectl label prometheusrule k8s-dashboard-alerts -n monitoring release=prometheus-stack --overwrite
+kubectl label prometheusrule k8s-dashboard-alerts -n monitoring team=robin --overwrite
+
+#Patch the prometheus pod with the label
+kubectl patch prometheus prometheus-stack-kube-prom-prometheus -n monitoring \
+  --type='merge' \
+  -p '{
+    "spec": {
+      "ruleSelector": {
+        "matchLabels": {
+          "release": "prometheus-stack",
+          "team": "robin"
+        }
+      }
+    }
+  }'
+
+ 
+# Delete the Prometheus & AlertManager Pod to pick the latest configuration
+kubectl delete pod -n monitoring -l app.kubernetes.io/name=prometheus
+kubectl delete pod -n monitoring -l app.kubernetes.io/name=alertmanager
