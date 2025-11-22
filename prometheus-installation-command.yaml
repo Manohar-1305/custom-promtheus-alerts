@@ -1,0 +1,22 @@
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+
+cat <<EOF > values.yaml
+prometheus:
+  service:
+    type: NodePort
+    nodePort: 30002
+
+alertmanager:
+  service:
+    type: NodePort
+    nodePort: 30001
+
+grafana:
+  service:
+    type: NodePort
+    nodePort: 30000
+EOF
+
+helm install prometheus-stack prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace -f values.yaml
